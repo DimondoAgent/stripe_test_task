@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }} — Stripe Shop{% endblock %}
+
+{% block extra_css %}
+.back { display: inline-flex; align-items: center; gap: .4rem; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-decoration: none; margin-bottom: 2.5rem; transition: color .15s; }
+.back:hover { color: var(--text); }
+.product { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); min-height: 420px; }
+@media(max-width:640px){ .product { grid-template-columns: 1fr; } }
+.product-visual { background: var(--surface); display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--border); position: relative; overflow: hidden; min-height: 300px; }
+.product-visual::after { content: attr(data-letter); font-family: 'Syne',sans-serif; font-weight: 800; font-size: 11rem; color: rgba(255,255,255,.04); position: absolute; user-select: none; }
+.product-visual::before { content: ''; position: absolute; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(232,255,71,.08) 0%, transparent 70%); }
+.id-badge { position: absolute; top: 1rem; left: 1rem; font-size: .6rem; letter-spacing: .18em; color: var(--muted); text-transform: uppercase; }
+.product-info { padding: 2.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.product-name { font-family: 'Syne',sans-serif; font-weight: 800; font-size: clamp(1.6rem,3vw,2.5rem); letter-spacing: -0.03em; line-height: 1.05; }
+.product-desc { font-size: .82rem; color: var(--muted); line-height: 1.7; flex: 1; }
+.price-row { display: flex; align-items: flex-end; gap: .4rem; padding: 1.25rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.price-big { font-family: 'Syne',sans-serif; font-weight: 800; font-size: 2.75rem; color: var(--accent); letter-spacing: -0.04em; line-height: 1; }
+.price-currency { font-size: .85rem; color: var(--muted); padding-bottom: .25rem; }
+.buy-area { display: flex; flex-direction: column; gap: .6rem; }
+.btn-buy { width: 100%; justify-content: center; padding: 1rem; font-size: .95rem; }
+.secure { font-size: .65rem; color: var(--muted); letter-spacing: .05em; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+.product { animation: fadeUp .35s ease both; }
+{% endblock %}
+
+{% block content %}
+<a href="/" class="back">← All items</a>
+
+<div class="product">
+  <div class="product-visual" data-letter="{{ item.name|slice:':1'|upper }}">
+    <span class="id-badge">Item #{{ item.id|stringformat:"04d" }}</span>
+  </div>
+  <div class="product-info">
+    <h1 class="product-name">{{ item.name }}</h1>
+    <p class="product-desc">{{ item.description }}</p>
+    <div class="price-row">
+      <div class="price-big">{{ item.price }}</div>
+      <div class="price-currency">{{ item.currency|upper }}</div>
+    </div>
+    <div class="buy-area">
+      <button id="buy-btn" class="btn btn-primary btn-buy" onclick="handleBuy()">
+        <span class="lbl">Buy Now</span>
+        <div class="spinner"></div>
+      </button>
+      <p class="secure">🔒 Secure checkout via Stripe · Test card: 4242 4242 4242 4242</p>
+      <div id="err" class="error-box"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+var stripe = Stripe('{{ stripe_publishable_key }}');
+
+function handleBuy() {
+  var btn = document.getElementById('buy-btn');
+  var err = document.getElementById('err');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  err.classList.remove('show');
+
+  fetch('/buy/{{ item.pk }}/')
+    .then(function(r) {
+      if (!r.ok) throw new Error('Server error: ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      return stripe.redirectToCheckout({ sessionId: data.session_id });
+    })
+    .then(function(result) {
+      if (result.error) throw new Error(result.error.message);
+    })
+    .catch(function(e) {
+      err.textContent = '⚠ ' + e.message;
+      err.classList.add('show');
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}

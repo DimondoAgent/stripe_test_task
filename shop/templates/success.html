@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Payment Successful{% endblock %}
+{% block extra_css %}
+.result { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6rem 2rem; gap:1.5rem; }
+.icon { width:68px; height:68px; border:2px solid var(--accent); background:rgba(232,255,71,.08); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.75rem; }
+.result h1 { font-family:'Syne',sans-serif; font-weight:800; font-size:2.5rem; letter-spacing:-0.03em; }
+.result p { color:var(--muted); font-size:.85rem; }
+@keyframes pop { 0%{transform:scale(.5);opacity:0} 80%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+.icon { animation: pop .5s cubic-bezier(.34,1.56,.64,1) both; }
+{% endblock %}
+{% block content %}
+<div class="result">
+  <div class="icon">✓</div>
+  <h1>Payment<br>Successful</h1>
+  <p>Your order has been received. Thank you!</p>
+  <a href="/" class="btn btn-primary" style="margin-top:1rem">← Back to Shop</a>
+</div>
+{% endblock %}

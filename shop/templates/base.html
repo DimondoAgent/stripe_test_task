@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Shop{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      /* Современная темная палитра */
+      --bg: #09090b; 
+      --surface: #18181b; 
+      --border: #27272a;
+      --accent: #6366f1; /* Благородный Stripe-подобный индиго */
+      --accent-hover: #4f46e5;
+      --accent2: #ff6b35;
+      --text: #fafafa; 
+      --muted: #a1a1aa;
+      --radius: 16px;
+    }
+ 
+    body { 
+      background: var(--bg); 
+      color: var(--text); 
+      font-family: 'Inter', sans-serif; 
+      min-height: 100vh; 
+      display: flex; 
+      flex-direction: column; 
+    }
+ 
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 2rem; 
+      border-bottom: 1px solid var(--border);
+      background: rgba(9, 9, 11, 0.8); 
+      backdrop-filter: blur(12px); /* Эффект матового стекла */
+      position: sticky; top: 0; z-index: 10;
+    }
+ 
+    .logo { 
+      font-weight: 800; font-size: 1.25rem; 
+      color: var(--text); text-decoration: none; 
+      letter-spacing: -0.03em; 
+    }
+    .logo span { color: var(--accent); }
+ 
+    .nav-hint { 
+      font-size: 0.75rem; font-weight: 500; 
+      color: var(--muted); background: var(--surface); 
+      padding: 0.3rem 0.8rem; border-radius: 99px; 
+      border: 1px solid var(--border); 
+    }
+ 
+    main { 
+      max-width: 1100px; margin: 0 auto; 
+      padding: 3rem 2rem; flex: 1; width: 100%; 
+    }
+ 
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.875rem;
+      border-radius: 8px; border: none; cursor: pointer; text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { background: var(--text); color: var(--bg); }
+    .btn-primary:hover { background: var(--muted); transform: translateY(-2px); }
+    
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-accent:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3); }
+ 
+    footer { 
+      text-align: center; padding: 2rem; font-size: 0.875rem; 
+      color: var(--muted); border-top: 1px solid var(--border); 
+      margin-top: auto; 
+    }
+    footer strong { color: var(--text); }
+    footer a { color: var(--accent); text-decoration: none; }
+ 
+    /* ── Ghost button ── */
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); border-color: #3f3f46; transform: translateY(-2px); }
+ 
+    /* ── Spinner (inside buy buttons) ── */
+    .spinner { display: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+ 
+    /* ── Loading state for buy buttons ── */
+    .btn.loading .lbl { display: none; }
+    .btn.loading .spinner { display: block; }
+    .btn.loading { pointer-events: none; opacity: 0.8; }
+ 
+    /* ── Error box ── */
+    .error-box { display: none; padding: 0.6rem 0.9rem; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; font-size: 0.8rem; color: #f87171; }
+    .error-box.show { display: block; }
+ 
+    {% block extra_css %}{% endblock %}
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">STRIPE<span>.</span>SHOP</a>
+    <span class="nav-hint">Test mode</span>
+  </nav>
+  <main>{% block content %}{% endblock %}</main>
+  <footer>
+    Test card: <strong>4242 4242 4242 4242</strong> · any future date · any CVC &nbsp;·&nbsp;
+    <a href="https://stripe.com/docs/testing" target="_blank" rel="noopener">Stripe test docs</a>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

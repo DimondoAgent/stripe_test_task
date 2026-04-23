@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }} — Stripe Shop{% endblock %}
+
+{% block extra_css %}
+.back { display: inline-flex; align-items: center; gap: .4rem; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-decoration: none; margin-bottom: 2.5rem; transition: color .15s; }
+.back:hover { color: var(--text); }
+.order-layout { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); }
+@media(max-width:640px){ .order-layout { grid-template-columns: 1fr; } }
+.order-items-panel { padding: 2rem; border-right: 1px solid var(--border); }
+.order-items-panel h2 { font-family:'Syne',sans-serif; font-weight:700; font-size:1rem; letter-spacing:.05em; margin-bottom:1.25rem; color:var(--muted); text-transform:uppercase; }
+.line-item { display: flex; justify-content: space-between; align-items: flex-start; padding: .85rem 0; border-bottom: 1px solid var(--border); gap: 1rem; }
+.line-item:last-child { border-bottom: none; }
+.line-name { font-size: .82rem; font-weight: 500; }
+.line-desc { font-size: .72rem; color: var(--muted); margin-top: .2rem; }
+.line-price { font-family: 'Syne', sans-serif; font-size: .95rem; font-weight: 700; white-space: nowrap; }
+.order-info { padding: 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.order-id { font-size: .6rem; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+.order-title { font-family: 'Syne',sans-serif; font-weight: 800; font-size: 2rem; letter-spacing:-0.03em; }
+.meta-row { display:flex; gap:.5rem; flex-wrap:wrap; }
+.badge { display: inline-flex; align-items: center; gap: .3rem; padding: .3rem .7rem; font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; border: 1px solid; }
+.badge-discount { border-color: rgba(100,200,100,.3); color: #5c5; background: rgba(100,200,100,.06); }
+.badge-tax { border-color: rgba(255,107,53,.3); color: var(--accent2); background: rgba(255,107,53,.06); }
+.price-row { display: flex; align-items: flex-end; gap: .4rem; padding: 1.25rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.price-big { font-family: 'Syne',sans-serif; font-weight: 800; font-size: 2.75rem; color: var(--accent); letter-spacing: -0.04em; line-height: 1; }
+.price-label { font-size: .72rem; color: var(--muted); padding-bottom: .2rem; }
+.buy-area { display: flex; flex-direction: column; gap: .6rem; }
+.btn-buy { width: 100%; justify-content: center; padding: 1rem; font-size: .95rem; }
+.secure { font-size: .65rem; color: var(--muted); letter-spacing: .05em; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+.order-layout { animation: fadeUp .35s ease both; }
+{% endblock %}
+
+{% block content %}
+<a href="/" class="back">← All items</a>
+
+<div class="order-layout">
+  <!-- Left: item list -->
+  <div class="order-items-panel">
+    <h2>{{ order.items.count }} item{{ order.items.count|pluralize }} in order</h2>
+    {% for item in order.items.all %}
+    <div class="line-item">
+      <div>
+        <div class="line-name">{{ item.name }}</div>
+        <div class="line-desc">{{ item.description|truncatechars:60 }}</div>
+      </div>
+      <div class="line-price">{{ item.get_currency_symbol }}{{ item.price }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Right: order summary + pay button -->
+  <div class="order-info">
+    <span class="order-id">Order #{{ order.id|stringformat:"04d" }}</span>
+    <h1 class="order-title">Order<br>Summary</h1>
+
+    {% if order.discount or order.tax %}
+    <div class="meta-row">
+      {% if order.discount %}
+      <span class="badge badge-discount">
+        Discount: {{ order.discount.name }}
+        {% if order.discount.percent_off %}(−{{ order.discount.percent_off }}%){% endif %}
+      </span>
+      {% endif %}
+      {% if order.tax %}
+      <span class="badge badge-tax">
+        Tax: {{ order.tax.name }} ({{ order.tax.percentage }}%)
+      </span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="price-row">
+      <div class="price-big">{{ currency_symbol }}{{ total }}</div>
+      <div class="price-label">subtotal{% if order.discount %} before discount{% endif %}</div>
+    </div>
+
+    <div class="buy-area">
+      <button id="buy-btn" class="btn btn-primary btn-buy" onclick="handleBuy()">
+        <span class="lbl">Pay Order</span>
+        <div class="spinner"></div>
+      </button>
+      <p class="secure">🔒 Secure checkout via Stripe · Test card: 4242 4242 4242 4242</p>
+      <div id="err" class="error-box"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+var stripe = Stripe('{{ stripe_publishable_key }}');
+
+function handleBuy() {
+  var btn = document.getElementById('buy-btn');
+  var err = document.getElementById('err');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  err.classList.remove('show');
+
+  fetch('/buy-order/{{ order.pk }}/')
+    .then(function(r) {
+      if (!r.ok) throw new Error('Server error: ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      return stripe.redirectToCheckout({ sessionId: data.session_id });
+    })
+    .then(function(result) {
+      if (result.error) throw new Error(result.error.message);
+    })
+    .catch(function(e) {
+      err.textContent = '⚠ ' + e.message;
+      err.classList.add('show');
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}

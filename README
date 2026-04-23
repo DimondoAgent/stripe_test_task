@@ -1,0 +1,196 @@
+# Stripe Shop
+
+A minimal Django e-commerce app with Stripe Checkout. Supports single items and multi-item orders with discounts and taxes.
+
+---
+
+## Features
+
+- Browse items and orders on the homepage
+- Single-item checkout via Stripe Checkout
+- Multi-item orders with optional **discount** (Stripe Coupon) and **tax** (Stripe Tax Rate)
+- Dual currency support: **USD** and **EUR** with separate Stripe API keys
+- Django Admin for full content management
+- Docker-ready
+
+---
+
+## Quick Start (Local)
+
+### 1. Clone and install
+
+```bash
+git clone <your-repo-url>
+cd stripe_shop
+
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and fill in your Stripe keys from [dashboard.stripe.com/apikeys](https://dashboard.stripe.com/apikeys):
+
+```env
+STRIPE_SECRET_KEY_USD=sk_test_...
+STRIPE_PUBLISHABLE_KEY_USD=pk_test_...
+SITE_URL=http://localhost:8000   # ← must match the port you run the server on
+```
+
+### 3. Run migrations and load sample data
+
+```bash
+python manage.py migrate
+python manage.py loaddata initial_data.json   # loads sample items, discounts, taxes and an order
+```
+
+### 4. Create a superuser and start
+
+```bash
+python manage.py createsuperuser
+python manage.py runserver
+```
+
+Open [http://localhost:8000](http://localhost:8000) — shop is live.  
+Admin panel: [http://localhost:8000/admin/](http://localhost:8000/admin/)
+
+---
+
+## Docker Deployment
+
+### 1. Prepare your `.env` file
+
+```bash
+cp .env.example .env
+# edit .env with your real Stripe keys
+```
+
+Set `SITE_URL` to the public address of your server, e.g.:
+
+```env
+SITE_URL=https://shop.yourdomain.com
+```
+
+### 2. Build and run
+
+```bash
+docker compose up --build -d
+```
+
+This will automatically:
+- Run database migrations
+- Load the sample fixture (`initial_data.json`)
+- Start the app on port **8000** via Gunicorn
+
+### 3. Create an admin user
+
+```bash
+docker compose exec web python manage.py createsuperuser
+```
+
+### 4. Access the app
+
+| URL | Description |
+|-----|-------------|
+| `http://localhost:8000/` | Storefront |
+| `http://localhost:8000/admin/` | Admin panel |
+
+### Stopping
+
+```bash
+docker compose down
+```
+
+---
+
+## Project Structure
+
+```
+stripe_shop/          # Django project config
+├── settings.py       # All settings, reads from .env
+├── urls.py           # Root URL config
+
+shop/                 # Main app
+├── models.py         # Item, Order, Discount, Tax
+├── views.py          # All views + Stripe Checkout logic
+├── urls.py           # App URL config
+├── admin.py          # Admin configuration
+└── templates/
+    ├── base.html     # Base layout
+    ├── index.html    # Homepage (items + orders)
+    ├── item.html     # Single item page
+    ├── order.html    # Order detail + pay button
+    ├── success.html  # Post-payment success page
+    └── cancel.html   # Cancelled payment page
+
+initial_data.json     # Sample fixture (items, discounts, taxes, order)
+Dockerfile
+docker-compose.yml
+.env.example
+```
+
+---
+
+## Stripe Setup
+
+### Test card
+
+Use this card number for all test payments:
+
+```
+Card:  4242 4242 4242 4242
+Date:  any future date
+CVC:   any 3 digits
+```
+
+### Creating a Coupon (for Discounts)
+
+1. Go to [dashboard.stripe.com/coupons](https://dashboard.stripe.com/coupons)
+2. Create a coupon (e.g. `SUMMER10` for 10% off)
+3. In Django Admin → **Discounts** → copy the coupon ID into `Stripe Coupon ID`
+
+### Creating a Tax Rate (for Taxes)
+
+1. Go to [dashboard.stripe.com/tax-rates](https://dashboard.stripe.com/tax-rates)
+2. Create a tax rate (e.g. VAT 20%)
+3. In Django Admin → **Taxes** → copy the tax rate ID (e.g. `txr_xxxxx`) into `Stripe Tax Rate ID`
+
+> The `percent_off` and `percentage` fields in the Django models are display-only. The actual values are always read from Stripe.
+
+---
+
+## Environment Variables Reference
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET_KEY` | Yes | Django secret key |
+| `DEBUG` | No | `True` for dev, `False` for production |
+| `ALLOWED_HOSTS` | Yes | Space-separated list of allowed hosts |
+| `SITE_URL` | Yes | Full URL of the site — used for Stripe redirect URLs |
+| `STRIPE_SECRET_KEY_USD` | Yes | Stripe secret key for USD payments |
+| `STRIPE_PUBLISHABLE_KEY_USD` | Yes | Stripe publishable key for USD payments |
+| `STRIPE_SECRET_KEY_EUR` | No | Stripe secret key for EUR (falls back to USD key) |
+| `STRIPE_PUBLISHABLE_KEY_EUR` | No | Stripe publishable key for EUR (falls back to USD key) |
+
+---
+
+## Requirements
+
+```
+django
+stripe
+python-dotenv
+whitenoise
+gunicorn
+```
+
+---
+
+## License
+
+MIT
